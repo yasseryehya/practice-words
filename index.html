@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تعلم القراءة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Amiri', serif;
+            background-color: #fcfcfc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #game-container {
+            text-align: center;
+            background: white;
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            max-width: 1000px; /* توسيع الحاوية لتستوعب 9 صور بوضوح */
+            width: 95%;
+        }
+
+        .word-display {
+            font-size: 110px;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: transform 0.2s, color 0.3s;
+            user-select: none;
+        }
+
+        .word-display:active {
+            transform: scale(0.95);
+        }
+        
+        .word-display:hover {
+            color: #3498db;
+        }
+
+        /* حاوية البطاقات الثلاث */
+        .options-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease;
+        }
+
+        .options-container.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* البطاقة الواحدة التي تحوي 3 صور */
+        .option-card {
+            border: 4px solid #eee;
+            border-radius: 20px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #fff;
+        }
+
+        .option-card:hover {
+            border-color: #3498db;
+            transform: translateY(-5px);
+        }
+
+        .correct {
+            border-color: #2ecc71 !important;
+            background-color: #eafaf1;
+            transform: scale(1.05) !important;
+        }
+
+        .disabled {
+            pointer-events: none;
+        }
+
+        /* شبكة الصور الداخلية لكل بطاقة (صورة كبيرة وصورتين صغار) */
+        .card-images-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .card-images-grid img {
+            width: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        /* الصورة الأولى تأخذ العرض بالكامل */
+        .card-images-grid img:first-child {
+            grid-column: span 2;
+            height: 140px; 
+        }
+
+        /* الصورتين الثانية والثالثة بجانب بعضهما */
+        .card-images-grid img:nth-child(2),
+        .card-images-grid img:nth-child(3) {
+            height: 90px;
+        }
+
+        /* الشاشات الصغيرة */
+        @media (max-width: 768px) {
+            #game-container {
+                height: 95vh;
+                overflow-y: auto;
+            }
+            .options-container {
+                grid-template-columns: 1fr;
+            }
+            .word-display {
+                font-size: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="word-display" id="main-word" onclick="showOptions()">...</div>
+    <div class="options-container" id="options"></div>
+</div>
+
+<script>
+    const PEXELS_API_KEY = 'YOUR_PEXELS_API_KEY'; // تأكد من وضع مفتاحك هنا
+
+    const data = [
+        { word: "خبز", vocalized: "خُبْزٌ", searchTerm: "bread" },
+        { word: "ماء", vocalized: "ماء", searchTerm: "water bottle" },
+        { word: "بيت", vocalized: "بَيْتٌ", searchTerm: "house exterior" }, // تم التعديل لنتائج أوضح
+        { word: "تفاحة", vocalized: "تُفَّاحَةٌ", searchTerm: "red apple" },
+        { word: "شجرة", vocalized: "شَجَرَةٌ", searchTerm: "tree" },
+        { word: "سيارة", vocalized: "سَيَّارَةٌ", searchTerm: "car" },
+        { word: "كرسي", vocalized: "كُرْسِيٌّ", searchTerm: "wooden chair" } // تم التعديل لنتائج أوضح
+    ];
+
+    let currentWordObj = {};
+    let imageCache = {}; 
+
+    async function prefetchAllImages() {
+        const mainWord = document.getElementById('main-word');
+        mainWord.innerText = "جاري تجهيز الصور...";
+
+        const promises = data.map(async (item) => {
+            try {
+                // طلب 3 صور بدلاً من واحدة
+                const response = await fetch(`https://api.pexels.com/v1/search?query=${item.searchTerm}&per_page=3&orientation=square`, {
+                    headers: { Authorization: PEXELS_API_KEY }
+                });
+                const result = await response.json();
+                
+                // استخراج الـ 3 صور
+                let urls = [];
+                for (let i = 0; i < 3; i++) {
+                    if (result.photos && result.photos.length > i) {
+                        urls.push(result.photos[i].src.medium);
+                    } else {
+                        // صورة احتياطية في حال لم يجد الـ API 3 صور
+                        urls.push('https://via.placeholder.com/300?text=No+Image'); 
+                    }
+                }
+                imageCache[item.word] = urls;
+            } catch (e) {
+                console.error(`Failed to fetch image for ${item.word}`, e);
+                imageCache[item.word] = [
+                    'https://via.placeholder.com/300',
+                    'https://via.placeholder.com/300',
+                    'https://via.placeholder.com/300'
+                ];
+            }
+        });
+
+        await Promise.all(promises);
+        loadNewRound(); 
+    }
+
+    function speakWord() {
+        if (!currentWordObj.vocalized) return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(currentWordObj.vocalized);
+        msg.lang = 'ar-SA';
+        msg.rate = 0.7;
+        window.speechSynthesis.speak(msg);
+    }
+
+    function loadNewRound() {
+        const mainWord = document.getElementById('main-word');
+        const optionsContainer = document.getElementById('options');
+
+        optionsContainer.classList.remove('visible');
+        optionsContainer.classList.remove('disabled');
+        optionsContainer.innerHTML = '';
+
+        currentWordObj = data[Math.floor(Math.random() * data.length)];
+        mainWord.innerText = currentWordObj.word;
+
+        let availableWrongOptions = data.filter(item => item.word !== currentWordObj.word);
+        availableWrongOptions.sort(() => Math.random() - 0.5);
+        let wrongOption1 = availableWrongOptions[0];
+        let wrongOption2 = availableWrongOptions[1];
+
+        // كل خيار الآن يحمل مصفوفة من 3 صور
+        const options = [
+            { word: currentWordObj.word, images: imageCache[currentWordObj.word] },
+            { word: wrongOption1.word, images: imageCache[wrongOption1.word] },
+            { word: wrongOption2.word, images: imageCache[wrongOption2.word] }
+        ].sort(() => Math.random() - 0.5);
+
+        options.forEach(opt => {
+            const card = document.createElement('div');
+            card.className = 'option-card';
+            
+            // إضافة الـ 3 صور داخل شبكة البطاقة
+            card.innerHTML = `
+                <div class="card-images-grid">
+                    <img src="${opt.images[0]}" alt="">
+                    <img src="${opt.images[1]}" alt="">
+                    <img src="${opt.images[2]}" alt="">
+                </div>
+            `;
+            
+            card.onclick = () => checkAnswer(opt.word, card);
+            optionsContainer.appendChild(card);
+        });
+    }
+
+    function showOptions() {
+        const optionsContainer = document.getElementById('options');
+        if (!optionsContainer.classList.contains('visible')) {
+            optionsContainer.classList.add('visible');
+        }
+    }
+
+    function checkAnswer(selectedWord, cardElement) {
+        if (selectedWord === currentWordObj.word) {
+            cardElement.classList.add('correct');
+            document.getElementById('options').classList.add('disabled'); 
+            
+            speakWord(); 
+            
+            setTimeout(() => {
+                loadNewRound();
+            }, 2000); 
+
+        } else {
+            cardElement.style.borderColor = '#ff7675';
+            setTimeout(() => cardElement.style.borderColor = '#eee', 500);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        prefetchAllImages();
+    });
+</script>
+
+</body>
+</html>
