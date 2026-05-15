@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>برنامج القراءة التفاعلي</title>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM Plex Sans Arabic:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #3498db;
@@ -16,7 +16,7 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'Amiri', serif;
+            font-family: 'IBM Plex Sans Arabic', serif;
             background-color: var(--bg);
             overflow: hidden;
             display: flex;
@@ -49,7 +49,7 @@
             border-radius: 15px;
             cursor: pointer;
             transition: all 0.2s;
-            font-family: 'Amiri', serif;
+            font-family: 'IBM Plex Sans Arabic', serif;
             color: var(--primary);
         }
 
@@ -81,7 +81,7 @@
             transition: transform 0.1s, color 0.3s;
             text-align: center;
             padding: 20px;
-            line-height: 1.5;
+            line-height: 1.2;
         }
 
         .word-display:active { transform: scale(0.9); color: var(--primary); }
@@ -101,7 +101,7 @@
             border-radius: 50px;
             color: #7f8c8d;
             cursor: pointer;
-            font-family: 'Amiri', serif;
+            font-family: 'IBM Plex Sans Arabic', serif;
         }
 
         .fade-in { animation: fadeIn 0.5s; }
@@ -129,26 +129,134 @@
 </div>
 
 <script>
+    // خريطة الكلمات: السطر يحتوي على الكلمة المعروضة (text) والكلمة المنطوقة المشكلة والمشكنة الأواخر (audio)
     const sessions = {
         actions: [
-            "زَرَعْ", "كَتَبْ", "دَرَسْ", "أَكَلْ", "لَعِبْ", "بَلَعْ", "ضَرَبْ", "رَفَعْ", "نَجَحْ", "ضَحِكْ", 
-            "هَرَبْ", "أَخَذْ", "نَامْ", "سَرَقْ", "شَتَمْ", "صَامْ", "قَامْ", "وَقَفْ", "جَلَسْ", "قَعَدْ", 
-            "رَكِبْ", "رَحَلْ", "مَنَحْ", "مَدَحْ", "مَنَعْ", "دَفَعْ", "حَلَفْ", "حَرَثْ", "مَسَحْ", "رَقَدْ", 
-            "حَرَسْ", "حَصَدْ", "قَرَأْ", "فَعَلْ", "عَمَلْ", "وَضَعْ", "قَصَدْ", "شَكَرْ", "وَزَنْ", "بَاعْ", 
-            "نَقَلْ", "سَجَدْ", "زَارْ", "زَادْ", "نَفَخْ"
+            { text: "زرع", audio: "زَرَعْ" },
+            { text: "كتب", audio: "كَتَبْ" },
+            { text: "درس", audio: "دَرَسْ" },
+            { text: "أكل", audio: "أَكَلْ" },
+            { text: "لعب", audio: "لَعِبْ" },
+            { text: "بلع", audio: "بَلَعْ" },
+            { text: "ضرب", audio: "ضَرَبْ" },
+            { text: "رفع", audio: "رَفَعْ" },
+            { text: "نجح", audio: "نَجَحْ" },
+            { text: "ضحك", audio: "ضَحِكْ" },
+            { text: "هرب", audio: "هَرَبْ" },
+            { text: "أخذ", audio: "أَخَذْ" },
+            { text: "نام", audio: "نَامْ" },
+            { text: "سرق", audio: "سَرَقْ" },
+            { text: "شتم", audio: "شَتَمْ" },
+            { text: "صام", audio: "صَامْ" },
+            { text: "قام", audio: "قَامْ" },
+            { text: "وقف", audio: "وَقَفْ" },
+            { text: "جلس", audio: "جَلَسْ" },
+            { text: "قعد", audio: "قَعَدْ" },
+            { text: "ركب", audio: "رَكِبْ" },
+            { text: "رحل", audio: "رَحَلْ" },
+            { text: "منح", audio: "مَنَحْ" },
+            { text: "مدح", audio: "مَدَحْ" },
+            { text: "منع", audio: "مَنَعْ" },
+            { text: "دفع", audio: "دَفَعْ" },
+            { text: "حلف", audio: "حَلَفْ" },
+            { text: "حرث", audio: "حَرَثْ" },
+            { text: "مسح", audio: "مَسَحْ" },
+            { text: "رقد", audio: "رَقَدْ" },
+            { text: "حرس", audio: "حَرَسْ" },
+            { text: "حصد", audio: "حَصَدْ" },
+            { text: "قرأ", audio: "قَرَأْ" },
+            { text: "فعل", audio: "فَعَلْ" },
+            { text: "عمل", audio: "عَمَلْ" },
+            { text: "وضع", audio: "وَضَعْ" },
+            { text: "قصد", audio: "قَصَدْ" },
+            { text: "شكر", audio: "شَكَرْ" },
+            { text: "وزن", audio: "وَزَنْ" },
+            { text: "باع", audio: "بَاعْ" },
+            { text: "نقل", audio: "نَقَلْ" },
+            { text: "سجد", audio: "سَجَدْ" },
+            { text: "زار", audio: "زَارْ" },
+            { text: "زاد", audio: "زَادْ" },
+            { text: "نفخ", audio: "نَفَخْ" }
         ],
         objects3: [
-            "قَلَمْ", "جَرَسْ", "بَابْ", "بَيْتْ", "حُوتْ", "سَمَكْ", "نَهَرْ", "مَاءْ", "خَوْخْ", "بَلَحْ", 
-            "نَمِرْ", "تَمِرْ", "رَأْسْ", "فَجِلْ", "عَجِلْ", "كُرَةْ", "سَلَّةْ", "صَدِرْ", "عَقِلْ"
+            { text: "قلم", audio: "قَلَمْ" },
+            { text: "جرس", audio: "جَرَسْ" },
+            { text: "باب", audio: "بَابْ" },
+            { text: "بيت", audio: "بَيْتْ" },
+            { text: "حوت", audio: "حُوتْ" },
+            { text: "سمك", audio: "سَمَكْ" },
+            { text: "نهر", audio: "نَهَرْ" },
+            { text: "ماء", audio: "مَاءْ" },
+            { text: "خوخ", audio: "خَوْخْ" },
+            { text: "بلح", audio: "بَلَحْ" },
+            { text: "نمر", audio: "نَمِرْ" },
+            { text: "تمر", audio: "تَمِرْ" },
+            { text: "رأس", audio: "رَأْسْ" },
+            { text: "فجل", audio: "فَجِلْ" },
+            { text: "عجل", audio: "عَجِلْ" },
+            { text: "كرة", audio: "كُرَةْ" },
+            { text: "سلة", audio: "سَلَّةْ" },
+            { text: "صدر", audio: "صَدِرْ" },
+            { text: "عقل", audio: "عَقِلْ" }
         ],
         words4: [
-            "بَابَا", "مَامَا", "هُدْهُدْ", "سُوسُو", "فِيفِي", "عَادِلْ", "عَامِرْ", "شَاكِرْ", "فَاضِلْ", 
-            "مِشْمِشْ", "سِمْسِمْ", "فِلْفِلْ", "مَصْنَعْ", "مَطْعَمْ", "مَلْعَبْ", "مَخْبَزْ", "مَرْهَمْ", 
-            "مَلْبَنْ", "أَصْفَرْ", "أَبْيَضْ", "أَزْرَقْ", "أَسْوَدْ", "أَخْضَرْ", "مَكْتَبْ", "مَرْكَبْ", 
-            "مَعْهَدْ", "مَوْكِبْ", "مَرْيَمْ", "مَرْسَمْ", "مَوْعِدْ", "مَنْظَرْ", "حِصَانْ", "حَمَّامْ", 
-            "جِبَالْ", "غَزَالْ", "غُرَابْ", "خَيَالْ", "خِيَارْ", "طَعَامْ", "دَجَاجْ", "جَنَاحْ", "كِتَابْ", 
-            "قِطَارْ", "عَامِلْ", "قَارِبْ", "هَاتِفْ", "بَارِدْ", "رِمَالْ", "جَوْرَبْ", "شَرَابْ", "شَاشَةْ", 
-            "شَوْكَةْ", "حِزَامْ", "حِذَاءْ", "قَمِيصْ", "شُبَّاكْ", "لَمْبَةْ"
+            { text: "بابا", audio: "بَابَا" },
+            { text: "ماما", audio: "مَامَا" },
+            { text: "هدهد", audio: "هُدْهُدْ" },
+            { text: "سوسو", audio: "سُوسُو" },
+            { text: "فيفي", audio: "فِيفِي" },
+            { text: "عادل", audio: "عَادِلْ" },
+            { text: "عامر", audio: "عَامِرْ" },
+            { text: "شاكر", audio: "شَاكِرْ" },
+            { text: "فاضل", audio: "فَاضِلْ" },
+            { text: "مشمش", audio: "مِشْمِشْ" },
+            { text: "سمسم", audio: "سِمْسِمْ" },
+            { text: "فلفل", audio: "فِلْفِلْ" },
+            { text: "مصنع", audio: "مَصْنَعْ" },
+            { text: "مطعم", audio: "مَطْعَمٌ" },
+            { text: "ملعب", audio: "مَلْعَبْ" },
+            { text: "مخبز", audio: "مَخْبَزْ" },
+            { text: "مرهم", audio: "مَرْهَمْ" },
+            { text: "ملبن", audio: "مَلْبَنْ" },
+            { text: "اصفر", audio: "أَصْفَرْ" },
+            { text: "ابيض", audio: "أَبْيَضْ" },
+            { text: "ازرق", audio: "أَزْرَقْ" },
+            { text: "اسود", audio: "أَسْوَدْ" },
+            { text: "أخضر", audio: "أَخْضَرْ" },
+            { text: "مكتب", audio: "مَكْتَبْ" },
+            { text: "مركب", audio: "مَرْكَبْ" },
+            { text: "معهد", audio: "مَعْهَدْ" },
+            { text: "موكب", audio: "مَوْكِبْ" },
+            { text: "مريم", audio: "مَرْيَمْ" },
+            { text: "مرسم", audio: "مَرْسَمْ" },
+            { text: "موعد", audio: "مَوْعِدْ" },
+            { text: "منظر", audio: "مَنْظَرْ" },
+            { text: "حصان", audio: "حِصَانْ" },
+            { text: "حمام", audio: "حَمَّامْ" },
+            { text: "جبال", audio: "جِبَالْ" },
+            { text: "غزال", audio: "غَزَالْ" },
+            { text: "غراب", audio: "غُرَابْ" },
+            { text: "خيال", audio: "خَيَالْ" },
+            { text: "خيار", audio: "خِيَارْ" },
+            { text: "طعام", audio: "طَعَامْ" },
+            { text: "دجاج", audio: "دَجَاجْ" },
+            { text: "جناح", audio: "جَنَاحْ" },
+            { text: "كتاب", audio: "كِتَابْ" },
+            { text: "قطار", audio: "قِطَارْ" },
+            { text: "عامل", audio: "عَامِلْ" },
+            { text: "قارب", audio: "قَارِبْ" },
+            { text: "هاتف", audio: "هَاتِفْ" },
+            { text: "بارد", audio: "بَارِدْ" },
+            { text: "رمال", audio: "رِمَالْ" },
+            { text: "جورب", audio: "جَوْرَبْ" },
+            { text: "شراب", audio: "شَرَابْ" },
+            { text: "شاشة", audio: "شَاشَةْ" },
+            { text: "شوكة", audio: "شَوْكَةْ" },
+            { text: "حزام", audio: "حِزَامْ" },
+            { text: "حذاء", audio: "حِذَاءْ" },
+            { text: "قميص", audio: "قَمِيصْ" },
+            { text: "شباك", audio: "شُبَّاكْ" },
+            { text: "لمبة", audio: "لَمْبَةْ" }
         ]
     };
 
@@ -176,14 +284,14 @@
 
     function displayWord() {
         const wordElement = document.getElementById('main-word');
-        wordElement.innerText = currentList[currentIndex];
+        wordElement.innerText = currentList[currentIndex].text; // عرض الكلمة بدون تشكيل
         wordElement.classList.remove('fade-in');
         void wordElement.offsetWidth;
         wordElement.classList.add('fade-in');
     }
 
     function handleWordInteraction() {
-        speak(currentList[currentIndex]);
+        speak(currentList[currentIndex].audio); // نطق الكلمة المشكلة والمشكنة الأواخر
         setTimeout(() => {
             currentIndex++;
             if (currentIndex >= currentList.length) {
@@ -198,7 +306,7 @@
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
         msg.lang = 'ar-SA';
-        msg.rate = 0.65; // سرعة أبطأ قليلاً لتوضيح مخارج الحروف المشكلة
+        msg.rate = 0.65; 
         window.speechSynthesis.speak(msg);
     }
 </script>
