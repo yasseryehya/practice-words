@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>برنامج القراءة التفاعلي</title>
-    <link href="https://fonts.googleapis.com/css2?family=IBM Plex Sans Arabic:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@700&family=Amiri:wght@700&family=Cairo:wght@700&family=Tajawal:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #3498db;
@@ -16,12 +16,54 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'IBM Plex Sans Arabic', serif;
+            font-family: 'Amiri', serif; 
             background-color: var(--bg);
             overflow: hidden;
             display: flex;
             flex-direction: column;
             user-select: none;
+        }
+
+        .font-selector-container {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .font-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            font-family: sans-serif;
+            margin-left: 5px;
+        }
+
+        .font-btn {
+            padding: 6px 15px;
+            font-size: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            color: #555;
+            transition: all 0.2s ease;
+        }
+
+        .font-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .menu-btn, .btn-back {
+            font-family: inherit;
         }
 
         #menu-screen {
@@ -49,7 +91,6 @@
             border-radius: 15px;
             cursor: pointer;
             transition: all 0.2s;
-            font-family: 'IBM Plex Sans Arabic', serif;
             color: var(--primary);
         }
 
@@ -67,7 +108,7 @@
 
         .header-info {
             position: absolute;
-            top: 40px;
+            top: 80px; 
             font-size: 24px;
             color: #95a5a6;
             text-align: center;
@@ -78,13 +119,22 @@
             font-size: clamp(80px, 15vw, 180px);
             color: var(--text);
             cursor: pointer;
-            transition: transform 0.1s, color 0.3s;
+            transition: color 0.2s ease, transform 0.1s ease;
             text-align: center;
             padding: 20px;
-            line-height: 1.2;
+            line-height: 1.3;
         }
 
-        .word-display:active { transform: scale(0.9); color: var(--primary); }
+        /* حالة الكلمة بعد النقر الأول */
+        .word-display.vocalized {
+            color: var(--primary);
+        }
+
+        /* تعطيل النقر المؤقت لحماية الانتقال */
+        .click-locked {
+            pointer-events: none;
+            opacity: 0.7;
+        }
 
         .footer-nav {
             position: absolute;
@@ -101,14 +151,22 @@
             border-radius: 50px;
             color: #7f8c8d;
             cursor: pointer;
-            font-family: 'IBM Plex Sans Arabic', serif;
         }
 
-        .fade-in { animation: fadeIn 0.5s; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
+
+<div class="font-selector-container">
+    <span class="font-label">الخط:</span>
+    <button class="font-btn active" onclick="changeFont('Amiri', this)" style="font-family: 'Amiri', serif;">أميري</button>
+    <button class="font-btn" onclick="changeFont('Cairo', this)" style="font-family: 'Cairo', sans-serif;">قاهرة</button>
+    <button class="font-btn" onclick="changeFont('Tajawal', this)" style="font-family: 'Tajawal', sans-serif;">تجول</button>
+    <button class="font-btn" onclick="changeFont('Almarai', this)" style="font-family: 'Almarai', sans-serif;">المراعي</button>
+    <button class="font-btn" onclick="changeFont('IBM Plex Sans Arabic', this)" style="font-family: 'IBM Plex Sans Arabic', sans-serif;">اي بي ام</button>
+</div>
 
 <div id="menu-screen">
     <h1 style="font-size: 36px; margin-bottom: 40px; color: var(--text);">اختر نوع الكلمات</h1>
@@ -121,7 +179,7 @@
 </div>
 
 <div id="game-screen">
-    <div class="header-info" id="mode-info">اضغط على الكلمة لسماعها</div>
+    <div class="header-info" id="mode-info">اضغط على الكلمة لقراءتها</div>
     <div class="word-display fade-in" id="main-word" onclick="handleWordInteraction()">...</div>
     <div class="footer-nav">
         <button class="btn-back" onclick="showMenu()">العودة للقائمة الرئيسية</button>
@@ -129,7 +187,6 @@
 </div>
 
 <script>
-    // خريطة الكلمات: السطر يحتوي على الكلمة المعروضة (text) والكلمة المنطوقة المشكلة والمشكنة الأواخر (audio)
     const sessions = {
         actions: [
             { text: "زرع", audio: "زَرَعْ" },
@@ -262,11 +319,26 @@
 
     let currentList = [];
     let currentIndex = 0;
+    let clickCount = 0; // متتبع عدد النقرات للكلمة الحالية
+    let isTransitioning = false; // قفل لمنع النقرات المتداخلة أثناء التغيير
+
+    function changeFont(fontName, buttonElement) {
+        if (fontName === 'Amiri') {
+            document.body.style.fontFamily = "'Amiri', serif";
+        } else {
+            document.body.style.fontFamily = `'${fontName}', sans-serif`;
+        }
+        const buttons = document.querySelectorAll('.font-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        buttonElement.classList.add('active');
+    }
 
     function showMenu() {
         document.getElementById('menu-screen').style.display = 'flex';
         document.getElementById('game-screen').style.display = 'none';
         window.speechSynthesis.cancel();
+        clickCount = 0;
+        isTransitioning = false;
     }
 
     function startSession(type) {
@@ -277,6 +349,9 @@
         }
         currentList.sort(() => Math.random() - 0.5);
         currentIndex = 0;
+        clickCount = 0;
+        isTransitioning = false;
+        
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'flex';
         displayWord();
@@ -284,22 +359,47 @@
 
     function displayWord() {
         const wordElement = document.getElementById('main-word');
-        wordElement.innerText = currentList[currentIndex].text; // عرض الكلمة بدون تشكيل
+        wordElement.innerText = currentList[currentIndex].text;
+        
+        // إعادة تعيين المظهر والحالة للكلمة الجديدة
+        wordElement.classList.remove('vocalized', 'click-locked');
         wordElement.classList.remove('fade-in');
         void wordElement.offsetWidth;
         wordElement.classList.add('fade-in');
+        
+        document.getElementById('mode-info').innerText = "اضغط على الكلمة لقراءتها";
+        clickCount = 0;
+        isTransitioning = false;
     }
 
     function handleWordInteraction() {
-        speak(currentList[currentIndex].audio); // نطق الكلمة المشكلة والمشكنة الأواخر
-        setTimeout(() => {
-            currentIndex++;
-            if (currentIndex >= currentList.length) {
-                currentList.sort(() => Math.random() - 0.5);
-                currentIndex = 0;
-            }
-            displayWord();
-        }, 1300); 
+        // حماية: إذا كانت الشاشة في مرحلة انتقال، نتجاهل النقرة تماماً
+        if (isTransitioning) return;
+
+        const wordElement = document.getElementById('main-word');
+        clickCount++;
+
+        if (clickCount === 1) {
+            // النقرة الأولى: تلوين الكلمة ونطقها فقط
+            wordElement.classList.add('vocalized');
+            document.getElementById('mode-info').innerText = "اضغط مرة أخرى للانتقال";
+            speak(currentList[currentIndex].audio);
+        } else if (clickCount === 2) {
+            // النقرة الثانية: بدء عملية الانتقال وتفعيل الحماية
+            isTransitioning = true;
+            wordElement.classList.add('click-locked'); // حظر بصري وبرمجي مؤقت
+            window.speechSynthesis.cancel(); // إيقاف أي صوت متبقٍ فوراً
+
+            // تأخير مريح (1.5 ثانية) يمنع النقرات العشوائية ويسمح بتهيئة الكلمة الجديدة
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex >= currentList.length) {
+                    currentList.sort(() => Math.random() - 0.5);
+                    currentIndex = 0;
+                }
+                displayWord();
+            }, 1500);
+        }
     }
 
     function speak(text) {
