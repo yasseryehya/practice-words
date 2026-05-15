@@ -123,17 +123,25 @@
             text-align: center;
             padding: 20px;
             line-height: 1.3;
+            display: inline-block;
         }
 
-        /* حالة الكلمة بعد النقر الأول */
         .word-display.vocalized {
             color: var(--primary);
         }
 
-        /* تعطيل النقر المؤقت لحماية الانتقال */
+        /* تأثير الحركة عند دخول كلمة جديدة */
+        .slide-in-effect {
+            animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* تأثير الحركة عند مغادرة الكلمة القديمة */
+        .slide-out-effect {
+            animation: slideDownOut 0.3s ease-in forwards;
+        }
+
         .click-locked {
             pointer-events: none;
-            opacity: 0.7;
         }
 
         .footer-nav {
@@ -153,8 +161,28 @@
             cursor: pointer;
         }
 
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* حركات CSS (Keyframes) */
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.6);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideDownOut {
+            from {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+        }
     </style>
 </head>
 <body>
@@ -165,7 +193,6 @@
     <button class="font-btn" onclick="changeFont('Cairo', this)" style="font-family: 'Cairo', sans-serif;">قاهرة</button>
     <button class="font-btn" onclick="changeFont('Tajawal', this)" style="font-family: 'Tajawal', sans-serif;">تجول</button>
     <button class="font-btn" onclick="changeFont('Almarai', this)" style="font-family: 'Almarai', sans-serif;">المراعي</button>
-    <button class="font-btn" onclick="changeFont('IBM Plex Sans Arabic', this)" style="font-family: 'IBM Plex Sans Arabic', sans-serif;">اي بي ام</button>
 </div>
 
 <div id="menu-screen">
@@ -180,7 +207,7 @@
 
 <div id="game-screen">
     <div class="header-info" id="mode-info">اضغط على الكلمة لقراءتها</div>
-    <div class="word-display fade-in" id="main-word" onclick="handleWordInteraction()">...</div>
+    <div class="word-display" id="main-word" onclick="handleWordInteraction()">...</div>
     <div class="footer-nav">
         <button class="btn-back" onclick="showMenu()">العودة للقائمة الرئيسية</button>
     </div>
@@ -319,8 +346,8 @@
 
     let currentList = [];
     let currentIndex = 0;
-    let clickCount = 0; // متتبع عدد النقرات للكلمة الحالية
-    let isTransitioning = false; // قفل لمنع النقرات المتداخلة أثناء التغيير
+    let clickCount = 0;
+    let isTransitioning = false;
 
     function changeFont(fontName, buttonElement) {
         if (fontName === 'Amiri') {
@@ -361,11 +388,9 @@
         const wordElement = document.getElementById('main-word');
         wordElement.innerText = currentList[currentIndex].text;
         
-        // إعادة تعيين المظهر والحالة للكلمة الجديدة
-        wordElement.classList.remove('vocalized', 'click-locked');
-        wordElement.classList.remove('fade-in');
-        void wordElement.offsetWidth;
-        wordElement.classList.add('fade-in');
+        // إزالة تأثيرات الخروج وإضافة تأثير الدخول النظيف (Pop/Scale In)
+        wordElement.classList.remove('vocalized', 'click-locked', 'slide-out-effect');
+        wordElement.classList.add('slide-in-effect');
         
         document.getElementById('mode-info').innerText = "اضغط على الكلمة لقراءتها";
         clickCount = 0;
@@ -373,24 +398,25 @@
     }
 
     function handleWordInteraction() {
-        // حماية: إذا كانت الشاشة في مرحلة انتقال، نتجاهل النقرة تماماً
         if (isTransitioning) return;
 
         const wordElement = document.getElementById('main-word');
         clickCount++;
 
         if (clickCount === 1) {
-            // النقرة الأولى: تلوين الكلمة ونطقها فقط
+            wordElement.classList.remove('slide-in-effect'); // إزالة تأثير الدخول عند النقر
             wordElement.classList.add('vocalized');
             document.getElementById('mode-info').innerText = "اضغط مرة أخرى للانتقال";
             speak(currentList[currentIndex].audio);
         } else if (clickCount === 2) {
-            // النقرة الثانية: بدء عملية الانتقال وتفعيل الحماية
             isTransitioning = true;
-            wordElement.classList.add('click-locked'); // حظر بصري وبرمجي مؤقت
-            window.speechSynthesis.cancel(); // إيقاف أي صوت متبقٍ فوراً
+            wordElement.classList.add('click-locked');
+            window.speechSynthesis.cancel(); 
 
-            // تأخير مريح (1.5 ثانية) يمنع النقرات العشوائية ويسمح بتهيئة الكلمة الجديدة
+            // تفعيل حركة الخروج (الإنزلاق واللاشيء)
+            wordElement.classList.add('slide-out-effect');
+
+            // انتظار انتهاء الحركة الصورية (300ms) ثم التبديل للكلمة الجديدة بلطف
             setTimeout(() => {
                 currentIndex++;
                 if (currentIndex >= currentList.length) {
@@ -398,7 +424,7 @@
                     currentIndex = 0;
                 }
                 displayWord();
-            }, 1500);
+            }, 400); // 400 مللي ثانية تمنح انتقالاً رشيقاً ومحكماً
         }
     }
 
